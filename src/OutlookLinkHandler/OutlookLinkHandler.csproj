@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>OutlookLinkHandler</AssemblyName>
+    <RootNamespace>OutlookLinkHandler</RootNamespace>
+    <Product>Outlook Item Link Handler</Product>
+    <Company>OutlookEmailLinkAddin</Company>
+    <Version>1.0.0</Version>
+    <!-- WinExe = no console window; this is a shell/protocol launcher. -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+</Project>
