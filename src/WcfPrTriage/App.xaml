@@ -1,0 +1,13 @@
+<Application x:Class="WcfPrTriage.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- Default palette; ThemeManager swaps this entry for the OS-appropriate one at startup. -->
+        <ResourceDictionary Source="Assets/Palette.Dark.xaml" />
+        <ResourceDictionary Source="Assets/Theme.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>
