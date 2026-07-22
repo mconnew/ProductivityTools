@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WcfPrTriage</AssemblyName>
+    <RootNamespace>WcfPrTriage</RootNamespace>
+    <Product>WCF PR Triage</Product>
+    <Company>ProductivityTools</Company>
+    <Version>1.0.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <!-- No external NuGet dependencies: HttpClient, System.Text.Json and the managed DPAPI wrapper
+         System.Security.Cryptography.ProtectedData all ship in the .NET Windows Desktop runtime. -->
+  </PropertyGroup>
+
+</Project>

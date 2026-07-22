@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Light palette. Neutrals lightened and status colours deepened so they keep contrast on white.
+       Keep the key set identical to Palette.Dark.xaml. -->
+  <SolidColorBrush x:Key="BgBrush" Color="#FFFFFFFF" />
+  <SolidColorBrush x:Key="PanelBrush" Color="#FFF5F6F8" />
+  <SolidColorBrush x:Key="PanelAltBrush" Color="#FFEAECEF" />
+  <SolidColorBrush x:Key="BorderBrush" Color="#FFD4D7DC" />
+  <SolidColorBrush x:Key="TextBrush" Color="#FF1B1D20" />
+  <SolidColorBrush x:Key="MutedTextBrush" Color="#FF5A6169" />
+  <SolidColorBrush x:Key="AccentBrush" Color="#FF2563EB" />
+  <SolidColorBrush x:Key="SelectionBrush" Color="#FFCBDDFF" />
+
+  <SolidColorBrush x:Key="FailureBrush" Color="#FFC42B1C" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#FF1E7D32" />
+  <SolidColorBrush x:Key="RunningBrush" Color="#FF8A6100" />
+  <SolidColorBrush x:Key="UnknownBrush" Color="#FF6B7078" />
+
+</ResourceDictionary>

@@ -1,0 +1,61 @@
+<Window x:Class="WcfPrTriage.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings — WCF PR Triage"
+        Width="520" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BgBrush}"
+        TextElement.Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="13">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Text="Repository" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10" />
+
+    <Grid Grid.Row="1" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="10" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Grid.Column="0">
+        <TextBlock Text="Owner" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+        <TextBox x:Name="OwnerBox" />
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Text="Repo" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+        <TextBox x:Name="RepoBox" />
+      </StackPanel>
+    </Grid>
+
+    <CheckBox Grid.Row="2" x:Name="DraftsBox" Content="Show draft pull requests" Margin="0,0,0,12" />
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,16" VerticalAlignment="Center">
+      <TextBlock Text="Auto-refresh every" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" />
+      <TextBox x:Name="AutoRefreshBox" Width="60" Margin="8,0,8,0" VerticalAlignment="Center" />
+      <TextBlock Text="seconds (0 = off)" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="4" Text="GitHub token (optional)" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,6" />
+
+    <TextBlock Grid.Row="5" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,6"
+               Text="All data this tool reads is public and works anonymously. A read-only token only raises the GitHub API rate limit from 60 to 5000 requests/hour, and is stored encrypted (DPAPI) for the current Windows user. Leave this blank to automatically borrow a token from the GitHub CLI (gh auth login) when you're signed in — no PAT to create or rotate. If neither is available the app just runs anonymously." />
+
+    <PasswordBox Grid.Row="6" x:Name="TokenBox" Margin="0,0,0,18" />
+
+    <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Content="Cancel" Width="90" Click="Cancel_Click" Margin="0,0,10,0" />
+      <Button Content="Save" Width="90" Style="{StaticResource AccentButton}" Click="Save_Click" IsDefault="True" />
+    </StackPanel>
+  </Grid>
+</Window>
