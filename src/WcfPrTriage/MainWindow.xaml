@@ -43,6 +43,15 @@
                    Foreground="{Binding State, Converter={StaticResource CiStateToBrushConverter}}" />
         <StackPanel Grid.Column="1">
           <TextBlock TextTrimming="CharacterEllipsis">
+            <TextBlock.ToolTip>
+              <ToolTip>
+                <TextBlock TextWrapping="Wrap">
+                  <Run Text="{Binding Header, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                  <Run Text="  " />
+                  <Run Text="{Binding Title, Mode=OneWay}" />
+                </TextBlock>
+              </ToolTip>
+            </TextBlock.ToolTip>
             <Run Text="{Binding Header, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
             <Run Text="  " />
             <Run Text="{Binding Title, Mode=OneWay}" />
