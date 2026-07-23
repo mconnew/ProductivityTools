@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:WcfPrTriage.ViewModels"
         Title="WCF PR Triage" Height="820" Width="1280"
+        Icon="pack://application:,,,/Assets/AppIcon.ico"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BgBrush}"
         TextElement.Foreground="{DynamicResource TextBrush}"
