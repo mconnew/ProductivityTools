@@ -1,0 +1,155 @@
+<Window x:Class="EdgeProfileRouter.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edge Profile Router" Height="660" Width="880"
+        MinHeight="520" MinWidth="720"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" FontSize="13">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="MinWidth" Value="90" />
+        </Style>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header + status -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Edge Profile Router" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="#555" Margin="0,2,0,0"
+                       Text="Open links in the right Microsoft Edge profile based on rules. Links that match no rule are handed to Edge to decide the profile — exactly as today." />
+            <TextBlock x:Name="StatusText" Margin="0,8,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- Registration controls -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="RegisterButton" Content="Register" Click="OnRegister"
+                    ToolTip="Register this app as a candidate default browser (per-user, no admin)." />
+            <Button x:Name="UnregisterButton" Content="Unregister" Click="OnUnregister"
+                    ToolTip="Remove the browser registration." />
+            <Button Content="Set as default…" Click="OnOpenDefaultApps"
+                    ToolTip="Open Windows Settings › Default apps to pick this app for HTTP/HTTPS." />
+        </StackPanel>
+
+        <!-- Edge path -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Edge path (blank = auto-detect):"
+                       VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox x:Name="EdgePathBox" Grid.Column="1" VerticalAlignment="Center"
+                     ToolTip="Optional override for msedge.exe. Leave blank to auto-detect." />
+        </Grid>
+
+        <!-- Rules label -->
+        <TextBlock Grid.Row="3" Style="{StaticResource Section}"
+                   Text="Routing rules — evaluated top to bottom, first match wins" />
+
+        <!-- Rules grid -->
+        <DataGrid x:Name="RulesGrid" Grid.Row="4"
+                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  SelectionMode="Single" SelectionUnit="FullRow"
+                  ItemsSource="{Binding Rules}" RowHeight="30">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="On" Width="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" />
+                <DataGridTextColumn Header="Host" Binding="{Binding HostPattern}" Width="130" />
+                <DataGridTextColumn Header="Path prefix" Binding="{Binding PathPrefix}" Width="120" />
+                <DataGridTextColumn Header="URL regex (optional)" Binding="{Binding UrlRegex}" Width="140" />
+                <DataGridTemplateColumn Header="Edge profile" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox Margin="2" VerticalAlignment="Center"
+                                      ItemsSource="{Binding DataContext.Profiles, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      SelectedValue="{Binding ProfileDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SelectedValuePath="Directory"
+                                      DisplayMemberPath="DisplayLabel" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Rule buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,8,0,0">
+            <Button Content="Add rule" Click="OnAddRule" />
+            <Button Content="Remove" Click="OnRemoveRule" />
+            <Button Content="Move up" Click="OnMoveUp" />
+            <Button Content="Move down" Click="OnMoveDown" />
+            <TextBlock VerticalAlignment="Center" Foreground="#777" Margin="8,0,0,0"
+                       Text="Tip: a plain host also matches its sub-domains; add '*' for a glob." />
+        </StackPanel>
+
+        <!-- Detected profiles -->
+        <Expander Grid.Row="6" Header="Detected Edge profiles" Margin="0,10,0,0">
+            <ItemsControl x:Name="ProfilesList" Margin="6,4,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Margin="0,1">
+                            <Run Text="•" />
+                            <Run Text="{Binding Directory, Mode=OneWay}" FontWeight="SemiBold" />
+                            <Run Text=" — " />
+                            <Run Text="{Binding Name, Mode=OneWay}" />
+                            <Run Text="  " />
+                            <Run Text="{Binding UserName, Mode=OneWay}" Foreground="#777" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Expander>
+
+        <!-- Test URL -->
+        <Grid Grid.Row="7" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Test a URL:" VerticalAlignment="Center"
+                       Margin="0,0,8,0" />
+            <TextBox x:Name="TestUrlBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                     Text="https://github.com/CoreWCF/CoreWCF" />
+            <Button Grid.Row="0" Grid.Column="2" Content="Test" Click="OnTestUrl" Margin="8,0,0,0" />
+            <TextBlock x:Name="TestResultText" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                       TextWrapping="Wrap" Margin="0,6,0,0" Foreground="#334" />
+        </Grid>
+
+        <!-- Bottom buttons -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <TextBlock x:Name="SaveHintText" VerticalAlignment="Center" Foreground="#2a7" Margin="0,0,12,0" />
+            <Button Content="Save" Click="OnSave" MinWidth="110" FontWeight="SemiBold" />
+            <Button Content="Close" Click="OnClose" Margin="0" />
+        </StackPanel>
+    </Grid>
+</Window>
