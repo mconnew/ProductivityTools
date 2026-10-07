@@ -2,7 +2,8 @@
 
 Open every link in the **right Microsoft Edge profile** based on rules that can inspect the
 whole URL — not just the host. Set this app as your default browser and, for each clicked link,
-it decides which Edge profile to use and launches Edge with `--profile-directory=<dir>`. Any URL
+Windows dispatches the request through a COM `DelegateExecute` handler; the router then decides
+which Edge profile to use and launches Edge with `--profile-directory=<dir>`. Any URL
 that no rule matches is handed straight to Edge **with no profile flag**, so Edge's own
 last-used / automatic-profile behaviour applies — exactly as if this app were not installed.
 
@@ -14,7 +15,10 @@ Edge to decide.
 
 ```
 You click a link anywhere in Windows
-        │  Windows invokes the default browser with the URL as %1
+        │  Windows activates the default browser's DelegateExecute COM verb
+        ▼
+RPCSS starts EdgeProfileRouter.exe -Embedding as a COM LocalServer
+        │  IExecuteCommand receives the URL
         ▼
 EdgeProfileRouter.exe  ──►  load rules (%APPDATA%\EdgeProfileRouter\config.json)
         │
@@ -26,6 +30,19 @@ EdgeProfileRouter.exe  ──►  load rules (%APPDATA%\EdgeProfileRouter\config
 Rules are evaluated top-to-bottom and the **first** match wins, so put more specific rules above
 broader ones. Routing shows no window and exits immediately, so it feels as fast as launching
 Edge directly.
+
+### Why COM dispatch instead of direct executable launch
+
+A traditional browser ProgId uses
+`shell\open\command = "EdgeProfileRouter.exe" "%1"`. That makes the application containing the
+link create the router process directly. Security policy can prohibit that child-process launch
+(Office applications are a common example), causing the link to fail with **Access is denied**.
+
+The router now registers the `open` verb with `DelegateExecute` and a per-user `LocalServer32`
+CLSID. The Windows shell asks COM to invoke `IExecuteCommand`; COM/RPCSS starts the router with
+`-Embedding`, passes the URL through the shell verb, and the router exits after dispatching it.
+The source application is no longer the router's parent process. A direct command is retained only
+as a compatibility fallback for callers that do not understand `DelegateExecute`.
 
 ### Why match on the profile *directory*, not the friendly name
 
@@ -68,6 +85,10 @@ Output: `src\EdgeProfileRouter\bin\Release\net10.0-windows\EdgeProfileRouter.exe
    ```powershell
    EdgeProfileRouter.exe --register
    ```
+
+   Run this again after upgrading from version 1.0 so the ProgId gains its `DelegateExecute` and
+   `LocalServer32` COM registration. Your existing Windows default-app choice and routing rules do
+   not need to be recreated.
 
 2. **Set it as default.** Windows 10/11 deliberately does **not** let any app set itself as the
    default browser (the choice is protected by a signed hash), so you finish this in Settings:
@@ -207,4 +228,7 @@ can neither run a privileged command nor smuggle extra switches into Edge:
   timeout; an invalid or catastrophically slow pattern simply fails to match (and is logged) rather
   than hanging routing.
 - **Registration is per-user (`HKCU`)** — no elevation, and fully reversible with `--unregister`.
+- **Link dispatch uses an out-of-process COM verb.** `DelegateExecute` activates a single-use
+  `LocalServer32` class through RPCSS, avoiding security policies that block the source
+  application from directly launching the router executable.
 ```

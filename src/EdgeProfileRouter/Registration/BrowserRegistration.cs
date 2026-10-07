@@ -6,7 +6,9 @@ using Microsoft.Win32;
 namespace EdgeProfileRouter.Registration;
 
 /// <summary>Snapshot of the app's default-browser registration state (for the settings UI).</summary>
-/// <param name="IsRegistered">True when the app is registered as a candidate browser.</param>
+/// <param name="IsRegistered">
+/// True when the app is registered as a candidate browser with its COM dispatch handler.
+/// </param>
 /// <param name="IsDefaultForHttps">True when Windows currently routes https to this app.</param>
 /// <param name="CurrentHttpsProgId">The ProgId Windows uses for https today (may be empty).</param>
 /// <param name="CurrentHttpsFriendly">A friendly name for that ProgId.</param>
@@ -24,8 +26,9 @@ internal sealed record RegistrationInfo(
 ///
 /// <para>The registration follows the standard Windows "default programs" contract:</para>
 /// <list type="bullet">
-///   <item>a <b>ProgId</b> (<c>EdgeProfileRouterHTM</c>) whose <c>shell\open\command</c> invokes
-///     this exe with the clicked URL;</item>
+///   <item>a <b>ProgId</b> (<c>EdgeProfileRouterHTM</c>) whose <c>shell\open\command</c> uses
+///     <c>DelegateExecute</c> to dispatch the clicked URL through COM/RPCSS;</item>
+///   <item>a per-user <b>LocalServer32</b> COM registration for the delegated verb;</item>
 ///   <item>a <b>StartMenuInternet</b> client entry with a <c>Capabilities</c> block that maps the
 ///     <c>http</c>/<c>https</c> URL associations (and <c>.htm</c>/<c>.html</c> files) to that ProgId;</item>
 ///   <item>a <b>RegisteredApplications</b> pointer to the Capabilities block.</item>
@@ -40,6 +43,8 @@ internal static class BrowserRegistration
 {
     internal const string AppRegistrationName = "EdgeProfileRouter";
     internal const string ProgId = "EdgeProfileRouterHTM";
+    internal const string HandlerClsid = "DEC19334-DA8D-4E2B-B80C-B604A2AF0FA6";
+    private const string HandlerClsidKey = "{DEC19334-DA8D-4E2B-B80C-B604A2AF0FA6}";
     private const string FriendlyName = "Edge Profile Router";
     private const string Description =
         "Routes links to the right Microsoft Edge profile based on host/path rules.";
@@ -47,6 +52,7 @@ internal static class BrowserRegistration
     private const string StartMenuInternetPath = @"Software\Clients\StartMenuInternet\" + AppRegistrationName;
     private const string CapabilitiesPath = StartMenuInternetPath + @"\Capabilities";
     private const string ClassesProgIdPath = @"Software\Classes\" + ProgId;
+    private const string ClassesClsidPath = @"Software\Classes\CLSID\" + HandlerClsidKey;
     private const string RegisteredAppsPath = @"Software\RegisteredApplications";
 
     internal static string ExePath => Environment.ProcessPath
@@ -61,7 +67,9 @@ internal static class BrowserRegistration
         string urlCommand = "\"" + exe + "\" \"%1\"";
         string browserCommand = "\"" + exe + "\" --browser";
 
-        // 1) ProgId: how a clicked URL / opened .htm file reaches this exe.
+        // 1) ProgId: DelegateExecute makes COM/RPCSS launch the handler instead of requiring
+        //    the application that opened the URL to create this process directly. The default
+        //    command remains as a compatibility fallback for callers that ignore DelegateExecute.
         using (RegistryKey progId = Registry.CurrentUser.CreateSubKey(ClassesProgIdPath))
         {
             progId.SetValue(string.Empty, FriendlyName, RegistryValueKind.String);
@@ -78,10 +86,22 @@ internal static class BrowserRegistration
                 icon.SetValue(string.Empty, iconRef, RegistryValueKind.String);
 
             using (RegistryKey cmd = progId.CreateSubKey(@"shell\open\command"))
+            {
                 cmd.SetValue(string.Empty, urlCommand, RegistryValueKind.String);
+                cmd.SetValue("DelegateExecute", HandlerClsidKey, RegistryValueKind.String);
+            }
         }
 
-        // 2) StartMenuInternet client + Capabilities (what makes it a listed "web browser").
+        // 2) LocalServer32: COM appends -Embedding when activating this CLSID. Program.Main
+        //    detects that argument, registers the class factory, and receives the shell verb.
+        using (RegistryKey clsid = Registry.CurrentUser.CreateSubKey(ClassesClsidPath))
+        {
+            clsid.SetValue(string.Empty, FriendlyName, RegistryValueKind.String);
+            using RegistryKey localServer = clsid.CreateSubKey("LocalServer32");
+            localServer.SetValue(string.Empty, "\"" + exe + "\"", RegistryValueKind.String);
+        }
+
+        // 3) StartMenuInternet client + Capabilities (what makes it a listed "web browser").
         using (RegistryKey client = Registry.CurrentUser.CreateSubKey(StartMenuInternetPath))
         {
             client.SetValue(string.Empty, FriendlyName, RegistryValueKind.String);
@@ -116,17 +136,19 @@ internal static class BrowserRegistration
             }
         }
 
-        // 3) Advertise the Capabilities block to Windows.
+        // 4) Advertise the Capabilities block to Windows.
         using (RegistryKey reg = Registry.CurrentUser.CreateSubKey(RegisteredAppsPath))
             reg.SetValue(AppRegistrationName, CapabilitiesPath, RegistryValueKind.String);
 
-        Log.Write("Registered as candidate browser. Exe = " + exe);
+        Log.Write("Registered as candidate browser with DelegateExecute "
+            + HandlerClsidKey + ". Exe = " + exe);
     }
 
     /// <summary>Removes the entire HKCU registration written by <see cref="Register"/>.</summary>
     internal static void Unregister()
     {
         TryDeleteTree(ClassesProgIdPath);
+        TryDeleteTree(ClassesClsidPath);
         TryDeleteTree(StartMenuInternetPath);
 
         try
@@ -151,7 +173,18 @@ internal static class BrowserRegistration
         {
             using RegistryKey? reg = Registry.CurrentUser.OpenSubKey(RegisteredAppsPath);
             using RegistryKey? progId = Registry.CurrentUser.OpenSubKey(ClassesProgIdPath);
-            registered = reg?.GetValue(AppRegistrationName) is not null && progId is not null;
+            using RegistryKey? command = Registry.CurrentUser.OpenSubKey(
+                ClassesProgIdPath + @"\shell\open\command");
+            using RegistryKey? localServer = Registry.CurrentUser.OpenSubKey(
+                ClassesClsidPath + @"\LocalServer32");
+
+            registered = reg?.GetValue(AppRegistrationName) is not null
+                && progId is not null
+                && string.Equals(
+                    command?.GetValue("DelegateExecute") as string,
+                    HandlerClsidKey,
+                    StringComparison.OrdinalIgnoreCase)
+                && CommandTargetsExecutable(localServer?.GetValue(string.Empty), ExePath);
         }
         catch
         {
@@ -205,6 +238,17 @@ internal static class BrowserRegistration
         var s when s.StartsWith("Firefox", StringComparison.OrdinalIgnoreCase) => "Mozilla Firefox",
         _ => progId,
     };
+
+    private static bool CommandTargetsExecutable(object? value, string executable)
+    {
+        if (value is not string command)
+            return false;
+
+        return string.Equals(
+            command.Trim().Trim('"'),
+            executable,
+            StringComparison.OrdinalIgnoreCase);
+    }
 
     private static void TryDeleteTree(string path)
     {
