@@ -14,9 +14,9 @@ namespace EdgeProfileRouter;
 /// <summary>
 /// Entry point. This app has two faces:
 /// <list type="bullet">
-///   <item><b>URL launcher</b> — when Windows (or any app) opens a link, the exe is invoked with
-///     the URL as its first argument. It matches the URL against the rules and launches Edge in
-///     the right profile, then exits. No window is shown, so routing stays fast.</item>
+///   <item><b>URL launcher</b> — Windows normally activates the registered COM
+///     <c>DelegateExecute</c> handler, which receives the URL and launches Edge in the right
+///     profile. A direct URL argument remains supported as a compatibility fallback.</item>
 ///   <item><b>Settings app</b> — when run with no arguments, it opens the WPF settings window to
 ///     manage rules, profiles and the default-browser registration.</item>
 /// </list>
@@ -35,6 +35,12 @@ internal static class Program
 
         try
         {
+            // COM/RPCSS appends -Embedding when it starts the LocalServer32 registered for
+            // DelegateExecute. Require it to be the only argument so an untrusted URL cannot
+            // smuggle the switch into the direct-command compatibility path.
+            if (args.Length == 1 && IsEmbeddingArgument(args[0]))
+                return ComServer.RunServer();
+
             if (args.Length == 0)
                 return OpenSettings();
 
@@ -47,7 +53,7 @@ internal static class Program
             // path) and ignore everything else: no link can smuggle in --register or --browser.
             if (!first.StartsWith('-'))
             {
-                UrlRouter.LaunchForUrl(RoutingConfig.Load(), first);
+                RouteShellInput(first);
                 return 0;
             }
 
@@ -143,6 +149,13 @@ internal static class Program
         return app.Run(window);
     }
 
+    /// <summary>
+    /// Routes untrusted input supplied by either the COM verb or the direct-command fallback.
+    /// No command-line switches are interpreted on this path.
+    /// </summary>
+    internal static void RouteShellInput(string input)
+        => UrlRouter.LaunchForUrl(RoutingConfig.Load(), input);
+
     private static string DescribeEnvironment()
     {
         var sb = new StringBuilder();
@@ -215,6 +228,13 @@ internal static class Program
             if (string.Equals(a.Trim(), flag, StringComparison.OrdinalIgnoreCase))
                 return true;
         return false;
+    }
+
+    private static bool IsEmbeddingArgument(string value)
+    {
+        string argument = value.Trim();
+        return string.Equals(argument, "-Embedding", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(argument, "/Embedding", StringComparison.OrdinalIgnoreCase);
     }
 
     // ---- Output: prefer the parent console; fall back to a message box -----------------------
